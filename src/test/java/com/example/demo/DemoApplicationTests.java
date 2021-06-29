@@ -21,8 +21,9 @@ class DemoApplicationTests {
     @Autowired
     Environment environment;
 
+    // FAILS
     @Test
-    void shouldRefreshTokenInInfiniteLoopEvenWhenRefreshReturnsError() {
+    void shouldNotUseRefreshTokenWhenRefreshReturnsError() {
         // expired
         String accessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIsImlhdCI6MCwidHlwIjoiQmVhcmVyIiwiYXpwIjoidGVzdCIsInNjb3BlIjoiIn0.-dhakXiubwI2wS24lU00WFzag8-IjaUX6fSzfMN6j2A";
         // good
@@ -56,6 +57,7 @@ class DemoApplicationTests {
         // first token refresh throws, but doesn't clear cache for refresh token
         Assertions.assertEquals("[test] test desc", msg1);
 
+        // FAILS here
         // second token refresh throws same error causing infinite loop of refreshes, until application restarts
         // shouldn't throw, but does
         Assertions.assertDoesNotThrow(() -> webClient.get()
