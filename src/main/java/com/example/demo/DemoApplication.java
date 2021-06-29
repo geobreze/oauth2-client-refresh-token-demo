@@ -18,7 +18,7 @@ public class DemoApplication {
     }
 
     @Bean
-    public WebClient webClient(
+    public WebClient.Builder webClientBuilder(
             ClientRegistrationRepository clientRegistrationRepository,
             OAuth2AuthorizedClientService clientService
     ) {
@@ -44,7 +44,6 @@ public class DemoApplication {
                 new ServletOAuth2AuthorizedClientExchangeFilterFunction(clientManager);
         oauth.setDefaultClientRegistrationId("test");
         return WebClient.builder()
-                .filter(oauth)
-                .build();
+                .filter(oauth);
     }
 }

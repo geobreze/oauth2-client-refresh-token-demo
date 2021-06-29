@@ -5,17 +5,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 @SpringBootTest
-@AutoConfigureWireMock(port = 9000)
+@AutoConfigureWireMock(port = 0)
 class DemoApplicationTests {
 
     @Autowired
-    WebClient webClient;
+    WebClient.Builder webClientBuilder;
+
+    @Autowired
+    Environment environment;
 
     @Test
     void shouldRefreshTokenInInfiniteLoopEvenWhenRefreshReturnsError() {
@@ -32,28 +36,32 @@ class DemoApplicationTests {
 
         stubFor(get("/test").willReturn(aResponse()));
 
+        WebClient webClient = webClientBuilder.baseUrl("http://localhost:"
+                + environment.getProperty("wiremock.server.port"))
+                .build();
+
         // first request with OAuth2 using password
         webClient.get()
-                .uri("http://localhost:9000/test")
+                .uri("/test")
                 .retrieve()
                 .toBodilessEntity()
                 .block();
 
         String msg1 = Assertions.assertThrows(OAuth2AuthorizationException.class, () -> webClient.get()
-                .uri("http://localhost:9000/test")
+                .uri("/test")
                 .retrieve()
                 .toBodilessEntity()
                 .block()).getError().toString();
 
-        String msg2 = Assertions.assertThrows(OAuth2AuthorizationException.class, () -> webClient.get()
-                .uri("http://localhost:9000/test")
-                .retrieve()
-                .toBodilessEntity()
-                .block()).getError().toString();
-
-        // first token refresh throws, but not clears cache for refresh token
+        // first token refresh throws, but doesn't clear cache for refresh token
         Assertions.assertEquals("[test] test desc", msg1);
+
         // second token refresh throws same error causing infinite loop of refreshes, until application restarts
-        Assertions.assertEquals("[test] test desc", msg2);
+        // shouldn't throw, but does
+        Assertions.assertDoesNotThrow(() -> webClient.get()
+                .uri("/test")
+                .retrieve()
+                .toBodilessEntity()
+                .block());
     }
 }
