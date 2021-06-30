@@ -32,7 +32,7 @@ class DemoApplicationTests {
         String accessTokenResponseBody = String.format("{\"expires_in\": 1, \"refresh_expires_in\": 30000, \"token_type\": \"bearer\", \"access_token\":\"%s\", \"refresh_token\":\"%s\"}", accessToken, refreshToken);
         stubFor(post("/token").withRequestBody(containing("grant_type=password")).willReturn(aResponse().withBody(accessTokenResponseBody).withStatus(200).withHeader("Content-Type", "application/json")));
 
-        String errorMessage = "{\"error\": \"test\", \"error_description\": \"test desc\"}";
+        String errorMessage = "{\"error\": \"invalid_grant\", \"error_description\": \"test desc\"}";
         stubFor(post("/token").withRequestBody(containing("grant_type=refresh_token")).willReturn(aResponse().withBody(errorMessage).withStatus(400).withHeader("Content-Type", "application/json")));
 
         stubFor(get("/test").willReturn(aResponse()));
@@ -55,7 +55,7 @@ class DemoApplicationTests {
                 .block()).getError().toString();
 
         // first token refresh throws, but doesn't clear cache for refresh token
-        Assertions.assertEquals("[test] test desc", msg1);
+        Assertions.assertEquals("[invalid_grant] test desc", msg1);
 
         // FAILS here
         // second token refresh throws same error causing infinite loop of refreshes, until application restarts
